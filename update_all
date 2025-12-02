@@ -4,7 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IP_LIST="$SCRIPT_DIR/ipaddresses.txt"
 CREDENTIALS="$SCRIPT_DIR/credentials.json"
-UPDATE_SCRIPT="$SCRIPT_DIR/update"
+UPDATE_SCRIPT="$SCRIPT_DIR/prune_users_and_update_os"
 ERROR_LOG="$SCRIPT_DIR/error_log.txt"
 
 # Check if required files exist
@@ -55,18 +55,42 @@ while IFS= read -r IP || [ -n "$IP" ]; do
     fi
     
     # Attempt SSH connection and run update script
-    # Using sshpass for password authentication (install via: brew install sshpass)
-    # Alternative: use SSH key authentication instead
+    # Using expect to handle password authentication without homebrew dependencies
     
-    if command -v sshpass &> /dev/null; then
-        # Using sshpass method
-        sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -p "$PORT" "$USERNAME@$IP" "bash -s" < "$UPDATE_SCRIPT" 2>&1 | tee /tmp/ssh_output_$$.log
-        SSH_EXIT_CODE=${PIPESTATUS[0]}
-    else
-        # Fallback without sshpass (requires SSH keys or will prompt for password)
-        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -p "$PORT" "$USERNAME@$IP" "bash -s" < "$UPDATE_SCRIPT" 2>&1 | tee /tmp/ssh_output_$$.log
-        SSH_EXIT_CODE=${PIPESTATUS[0]}
-    fi
+    expect << EOF 2>&1 | tee /tmp/ssh_output_$.log
+set timeout 30
+spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -p $PORT $USERNAME@$IP "bash -s" < $UPDATE_SCRIPT
+expect {
+    "password:" {
+        send "$PASSWORD\r"
+        expect {
+            "Failed to authenticate" {
+                puts "AUTH_FAILED"
+                exit 1
+            }
+            "Permission denied" {
+                puts "AUTH_FAILED"
+                exit 1
+            }
+            eof {
+                exit 0
+            }
+        }
+    }
+    "Permission denied" {
+        puts "AUTH_FAILED"
+        exit 1
+    }
+    timeout {
+        puts "CONNECTION_TIMEOUT"
+        exit 1
+    }
+    eof {
+        exit 0
+    }
+}
+EOF
+    SSH_EXIT_CODE=$?
     
     # Check for authentication failures
     if grep -q "Failed to authenticate\|Permission denied\|Authentication failed" /tmp/ssh_output_$$.log; then
