@@ -1,4 +1,4 @@
-#v12
+#v13
 
 #!/bin/bash
 
@@ -9,7 +9,7 @@ CREDENTIALS="$SCRIPT_DIR/credentials.json"
 ERROR_LOG="$SCRIPT_DIR/error_log.txt"
 
 # GitHub raw URL for the update script
-UPDATE_SCRIPT_URL="https://raw.githubusercontent.com/xxfantasiadownxx/scripts/refs/heads/main/update_os"
+UPDATE_SCRIPT_URL="https://raw.githubusercontent.com/xxfantasiadownxx/scripts/refs/heads/main/updateos"
 
 # Check if required files exist
 if [ ! -f "$IP_LIST" ]; then
@@ -87,8 +87,8 @@ while IFS= read -r IP || [ -n "$IP" ]; do
             }
         }
         
-        # Execute the update script via curl
-        send \"curl -sSf $UPDATE_SCRIPT_URL | bash\r\"
+        # Execute the update script via curl with auto-confirm flag
+        send \"curl -sSf $UPDATE_SCRIPT_URL | bash -s -- --auto\r\"
         
         # Wait for completion
         expect {
