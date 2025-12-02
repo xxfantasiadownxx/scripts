@@ -1,4 +1,4 @@
-#v5
+#v6
 
 #!/bin/bash
 
@@ -6,7 +6,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IP_LIST="$SCRIPT_DIR/ipaddresses.txt"
 CREDENTIALS="$SCRIPT_DIR/credentials.json"
-UPDATE_SCRIPT="$SCRIPT_DIR/update_os"
+UPDATE_SCRIPT="$SCRIPT_DIR/prune_users_and_update_os"
 ERROR_LOG="$SCRIPT_DIR/error_log.txt"
 
 # Check if required files exist
@@ -90,11 +90,20 @@ while IFS= read -r IP || [ -n "$IP" ]; do
             }
         }
         
-        # Send the update script
+        # Execute the update script via bash
+        send \"bash -s\r\"
+        expect -re \"\\\\$|#|%|>\"
+        
+        # Send the script contents
         set f [open \"$UPDATE_SCRIPT\" r]
-        set commands [read \$f]
+        while {[gets \$f line] >= 0} {
+            send \"\$line\r\"
+            expect -re \"\\\\$|#|%|>\"
+        }
         close \$f
-        send \"\$commands\r\"
+        
+        # End the bash -s input with Ctrl+D
+        send \"\004\"
         
         # Wait for completion
         expect {
