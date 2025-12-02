@@ -4,7 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IP_LIST="$SCRIPT_DIR/ipaddresses.txt"
 CREDENTIALS="$SCRIPT_DIR/credentials.json"
-UPDATE_SCRIPT="$SCRIPT_DIR/update"
+UPDATE_SCRIPT="$SCRIPT_DIR/prune_users_and_update_os"
 ERROR_LOG="$SCRIPT_DIR/error_log.txt"
 
 # Check if required files exist
@@ -54,48 +54,77 @@ while IFS= read -r IP || [ -n "$IP" ]; do
         continue
     fi
     
-    # Attempt SSH connection and run update script
-    # Using expect to handle password authentication without homebrew dependencies
-    
-    expect << EOF 2>&1 | tee /tmp/ssh_output_$.log
-set timeout 30
-spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -p $PORT $USERNAME@$IP "bash -s" < $UPDATE_SCRIPT
+    # Create expect script and execute it
+    /usr/bin/expect << 'EXPECT_SCRIPT'
+set timeout 60
+set ip [lindex $argv 0]
+set username [lindex $argv 1]
+set password [lindex $argv 2]
+set port [lindex $argv 3]
+set update_script [lindex $argv 4]
+
+log_user 1
+
+spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -p $port ${username}@${ip}
+
 expect {
-    "password:" {
-        send "$PASSWORD\r"
+    -re "password:|Password:" {
+        send "$password\r"
         expect {
-            "Failed to authenticate" {
-                puts "AUTH_FAILED"
+            -re "Permission denied|Failed to authenticate" {
+                puts "\nAUTH_FAILED"
                 exit 1
             }
-            "Permission denied" {
-                puts "AUTH_FAILED"
-                exit 1
-            }
-            eof {
+            -re "\[$#%>]" {
+                # Successfully logged in, now send the update script
+                set fp [open $update_script r]
+                set script_content [read $fp]
+                close $fp
+                
+                send "$script_content\r"
+                send "exit\r"
+                expect eof
                 exit 0
+            }
+            timeout {
+                puts "\nLOGIN_TIMEOUT"
+                exit 1
             }
         }
     }
-    "Permission denied" {
-        puts "AUTH_FAILED"
+    -re "Permission denied|Failed to authenticate" {
+        puts "\nAUTH_FAILED"
         exit 1
     }
     timeout {
-        puts "CONNECTION_TIMEOUT"
+        puts "\nCONNECTION_TIMEOUT"
         exit 1
     }
     eof {
-        exit 0
+        puts "\nCONNECTION_CLOSED"
+        exit 1
     }
 }
-EOF
+EXPECT_SCRIPT
+" "$IP" "$USERNAME" "$PASSWORD" "$PORT" "$UPDATE_SCRIPT" > /tmp/ssh_output_$$.log 2>&1
+    
     SSH_EXIT_CODE=$?
     
+    # Display output
+    cat /tmp/ssh_output_$$.log
+    
     # Check for authentication failures
-    if grep -q "Failed to authenticate\|Permission denied\|Authentication failed" /tmp/ssh_output_$$.log; then
+    if grep -q "AUTH_FAILED" /tmp/ssh_output_$$.log; then
         echo "ERROR: Authentication failed for $IP"
         echo "[$(date)] $IP - Failed to authenticate" >> "$ERROR_LOG"
+        rm -f /tmp/ssh_output_$$.log
+        continue
+    fi
+    
+    # Check for connection issues
+    if grep -q "CONNECTION_TIMEOUT\|CONNECTION_CLOSED\|LOGIN_TIMEOUT" /tmp/ssh_output_$$.log; then
+        echo "ERROR: Connection issue for $IP"
+        echo "[$(date)] $IP - Connection issue" >> "$ERROR_LOG"
         rm -f /tmp/ssh_output_$$.log
         continue
     fi
