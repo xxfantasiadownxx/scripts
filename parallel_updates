@@ -1,9 +1,10 @@
-# Parallel Updates for MacOS v1
+# Parallel Updates for MacOS v2
 
 # This script operates on the file ipaddresses.txt which is a list of target IPs to ssh into and update.
 # It will also prune users who haven't logged in within 30 days, reducing the overall user account footprint and freeing up valuable storage.
 # It will move from machine to machine updating, rebooting, and exiting.
 # It functions in a parallel manner, meaning it SSH into multiple machines at once, definable at MAX_PARALLEL.
+# This script will sleep 5 seconds between each parallel connection event.
 # It gets its SSH credentials from credentials.json (which needs to be populated with the appropriate SSH credentials)
 # It will generate an error log at error_log.txt when it encounters any reasons it can't update.
 
@@ -19,6 +20,7 @@ UPDATE_OS_FILE="update_os"
 ERROR_LOG="error_log.txt"
 REMOTE_SCRIPT="prune_and_update"
 MAX_PARALLEL=5  # Maximum number of parallel updates
+SLEEP=5 # sleep time between connection attempts.
 
 # Colors for output
 RED='\033[0;31m'
@@ -306,6 +308,7 @@ start_job() {
     process_machine "$ip" "$USERNAME" "$PASSWORD" &
     local pid=$!
     running_jobs[$pid]=$ip
+    sleep $SLEEP  # 5-second stagger between launches
 }
 
 # Function to wait for any job to complete
