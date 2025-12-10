@@ -1,4 +1,4 @@
-# Parallel Updates for MacOS v2
+# Parallel Updates for MacOS v3
 
 # This script operates on the file ipaddresses.txt which is a list of target IPs to ssh into and update.
 # It will also prune users who haven't logged in within 30 days, reducing the overall user account footprint and freeing up valuable storage.
@@ -29,24 +29,18 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to log errors (with file locking)
+# Function to log errors (simplified, no locking)
 log_error() {
     local ip=$1
     local error=$2
-    (
-        flock -x 200
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] IP: $ip - ERROR: $error" >> "$ERROR_LOG"
-    ) 200>"$ERROR_LOG.lock"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] IP: $ip - ERROR: $error" >> "$ERROR_LOG"
     echo -e "${RED}[ERROR]${NC} $ip - $error"
 }
 
-# Function to log success (with file locking)
+# Function to log success (simplified, no locking)
 log_success() {
     local ip=$1
-    (
-        flock -x 200
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] IP: $ip - SUCCESS: Update completed" >> "$ERROR_LOG"
-    ) 200>"$ERROR_LOG.lock"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] IP: $ip - SUCCESS: Update completed" >> "$ERROR_LOG"
     echo -e "${GREEN}[SUCCESS]${NC} $ip - Update completed successfully"
 }
 
@@ -288,8 +282,15 @@ echo "Credentials: $USERNAME"
 echo "Error log: $ERROR_LOG"
 echo ""
 
-# Read all IPs into an array
-mapfile -t ip_array < <(grep -v '^#' "$IP_FILE" | grep -v '^[[:space:]]*$')
+# Read all IPs into an array (Bash 3.2 compatible way)
+ip_array=()
+while IFS= read -r line; do
+    # Skip comments and empty lines
+    [[ "$line" =~ ^#.*$ ]] && continue
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*$ ]] && continue
+    ip_array+=("$line")
+done < "$IP_FILE"
+
 total=${#ip_array[@]}
 
 echo "Total machines to process: $total"
@@ -299,7 +300,10 @@ echo ""
 successful=0
 failed=0
 current_index=0
-declare -A running_jobs  # Associative array to track running jobs
+
+# Use a temporary directory to track running jobs (instead of associative array)
+JOB_DIR=$(mktemp -d)
+trap "rm -rf $JOB_DIR" EXIT
 
 # Function to start a job
 start_job() {
@@ -307,19 +311,22 @@ start_job() {
     log_info "$ip" "Launching parallel update job..."
     process_machine "$ip" "$USERNAME" "$PASSWORD" &
     local pid=$!
-    running_jobs[$pid]=$ip
+    echo "$ip" > "$JOB_DIR/$pid"
     sleep $SLEEP  # 5-second stagger between launches
 }
 
 # Function to wait for any job to complete
 wait_for_job() {
     while true; do
-        for pid in "${!running_jobs[@]}"; do
+        for pid_file in "$JOB_DIR"/*; do
+            [[ ! -f "$pid_file" ]] && continue
+            
+            local pid=$(basename "$pid_file")
             if ! kill -0 "$pid" 2>/dev/null; then
                 # Job finished
                 wait "$pid"
                 local exit_code=$?
-                local ip=${running_jobs[$pid]}
+                local ip=$(cat "$pid_file")
                 
                 if [[ $exit_code -eq 0 ]]; then
                     ((successful++))
@@ -327,7 +334,7 @@ wait_for_job() {
                     ((failed++))
                 fi
                 
-                unset running_jobs[$pid]
+                rm -f "$pid_file"
                 return 0
             fi
         done
@@ -335,17 +342,26 @@ wait_for_job() {
     done
 }
 
+# Function to count running jobs
+count_running_jobs() {
+    local count=0
+    for pid_file in "$JOB_DIR"/*; do
+        [[ -f "$pid_file" ]] && ((count++))
+    done
+    echo $count
+}
+
 # Main parallel processing loop
-while [[ $current_index -lt $total ]] || [[ ${#running_jobs[@]} -gt 0 ]]; do
+while [[ $current_index -lt $total ]] || [[ $(count_running_jobs) -gt 0 ]]; do
     # Start new jobs up to MAX_PARALLEL
-    while [[ ${#running_jobs[@]} -lt $MAX_PARALLEL ]] && [[ $current_index -lt $total ]]; do
+    while [[ $(count_running_jobs) -lt $MAX_PARALLEL ]] && [[ $current_index -lt $total ]]; do
         ip=${ip_array[$current_index]}
         start_job "$ip"
         ((current_index++))
     done
     
     # Wait for at least one job to complete if we're at max capacity
-    if [[ ${#running_jobs[@]} -ge $MAX_PARALLEL ]] || [[ $current_index -ge $total ]]; then
+    if [[ $(count_running_jobs) -ge $MAX_PARALLEL ]] || [[ $current_index -ge $total ]]; then
         wait_for_job
     fi
 done
