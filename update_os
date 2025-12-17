@@ -3,9 +3,9 @@
 
 #!/bin/bash
 
-echo "================================"
+echo "========================================"
 echo "STEP 1: Pruning Inactive Users"
-echo "================================"
+echo "========================================"
 echo ""
 
 # List of users to exclude from deletion
@@ -89,9 +89,9 @@ fi
 rm "$TEMP_FILE"
 
 echo ""
-echo "================================"
+echo "========================================"
 echo "STEP 2: Checking for macOS Updates"
-echo "================================"
+echo "========================================"
 echo ""
 
 # Check for available updates
