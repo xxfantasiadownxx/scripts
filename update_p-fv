@@ -3,9 +3,9 @@
 # This script removes inactive user accounts, disables FileVault prompts, and updates the system to the latest version.
 # It only works on a single-machine level, being necessary to run on each individual machine.
 
-echo "================================"
+echo "========================================"
 echo "STEP 1: Pruning Inactive Users"
-echo "================================"
+echo "========================================"
 echo ""
 
 # List of users to exclude from deletion
@@ -103,9 +103,9 @@ killall NotificationCenter 2>/dev/null || true
 echo "FileVault notification prompts have been disabled."
 
 echo ""
-echo "================================"
+echo "========================================"
 echo "STEP 3: Checking for macOS Updates"
-echo "================================"
+echo "========================================"
 echo ""
 
 # Check for available updates
