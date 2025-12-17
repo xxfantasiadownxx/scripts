@@ -120,6 +120,8 @@ if [[ -z "$UPDATE_LABEL" ]]; then
   echo ""
   echo "$UPDATE_OUTPUT"
 else
+  echo "The current logged on user is: " && whoami
+  echo ""
   echo "Found update: $UPDATE_LABEL"
   echo ""
   read -p "Do you want to install this update and restart? (yes/no): " update_confirm
