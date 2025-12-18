@@ -45,7 +45,6 @@ boot_user() {
   read -p "Who would you like to boot?" bootuser
   echo "Booting the user $bootuser"
   sudo launchctl bootout user/$(id -u $bootuser)
-
 }
 
 prune_users() {
