@@ -225,6 +225,7 @@ while true; do
     0)
       echo "Exiting..."
       clear
+      rm -rf mac-maintainer
       exit 0
       ;;
     *)
