@@ -90,7 +90,17 @@ rm "$TEMP_FILE"
 
 echo ""
 echo "========================================"
-echo "STEP 2: Checking for macOS Updates"
+echo "STEP 2: Checking users logged in."
+echo "========================================"
+echo ""
+
+echo "Users currently logged in are: " && who
+echo ""
+echo ""
+
+echo ""
+echo "========================================"
+echo "STEP 3: Checking for macOS Updates"
 echo "========================================"
 echo ""
 
