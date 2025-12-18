@@ -106,11 +106,11 @@ echo ""
 echo "========================================"
 echo "STEP 3: Checking users logged in."
 echo "========================================"
-  echo ""
-  echo ""
-  echo "Users currently logged in are: " && who
-  echo ""
-  echo ""
+echo ""
+
+echo "Users currently logged in are: " && who
+echo ""
+echo ""
 
 echo ""
 echo "========================================"
