@@ -5,7 +5,7 @@
 # Function to prune inactive users
 prune_users() {
   echo "========================================"
-  echo "STEP 1: Pruning Inactive Users"
+  echo "     Pruning Inactive User Accounts"
   echo "========================================"
   echo ""
 
@@ -92,7 +92,7 @@ prune_users() {
 # Function to check FileVault encryption status
 check_filevault() {
   echo "========================================"
-  echo "Checking FileVault Encryption Status"
+  echo "  Checking FileVault Encryption Status"
   echo "========================================"
   echo ""
   
@@ -105,12 +105,6 @@ check_filevault() {
   elif echo "$FV_STATUS" | grep -q "FileVault is Off"; then
     echo ""
     echo "✗ FileVault is NOT enabled. Disk is not encrypted."
-    echo ""
-    read -p "Would you like to enable FileVault? (yes/no): " enable_fv
-    if [[ "$enable_fv" == "yes" ]]; then
-      echo "Please enable FileVault through System Preferences > Security & Privacy > FileVault"
-      echo "You'll need to restart and have admin privileges."
-    fi
   fi
   echo ""
 }
@@ -118,7 +112,7 @@ check_filevault() {
 # Function to disable FileVault prompts
 disable_filevault_prompts() {
   echo "========================================"
-  echo "Disabling FileVault Prompts"
+  echo "    Disabling FileVault Notification"
   echo "========================================"
   echo ""
 
@@ -135,7 +129,7 @@ disable_filevault_prompts() {
 # Function to check for macOS updates
 check_updates() {
   echo "========================================"
-  echo "Checking for macOS Updates"
+  echo "       Checking for macOS Updates"
   echo "========================================"
   echo ""
 
@@ -170,10 +164,10 @@ check_updates() {
 # Function to check currently logged in users
 check_logged_in_users() {
   echo "========================================"
-  echo "Checking Users Logged In"
+  echo "        Checking Users Logged In"
   echo "========================================"
   echo ""
-  echo "Users currently logged in are: "
+  echo "The ssers currently logged into this system are: "
   who
   echo ""
 }
@@ -182,14 +176,14 @@ check_logged_in_users() {
 show_menu() {
   echo ""
   echo "========================================"
-  echo "   macOS Maintenance Script"
+  echo "        macOS Maintenance Script"
   echo "========================================"
   echo ""
   echo "1. Prune user accounts that haven't logged in for 30+ days"
   echo "2. Check for FileVault disk encryption"
   echo "3. Disable FileVault notifications"
-  echo "4. Check for macOS updates"
-  echo "5. Check currently logged in users"
+  echo "4. Check currently logged in users"
+  echo "5. Check for macOS updates"
   echo "6. Run all maintenance tasks"
   echo "0. Exit"
   echo ""
@@ -212,19 +206,19 @@ while true; do
       disable_filevault_prompts
       ;;
     4)
-      check_updates
+      check_logged_in_users
       ;;
     5)
-      check_logged_in_users
+      check_updates
       ;;
     6)
       prune_users
+      check_logged_in_users
       check_filevault
       disable_filevault_prompts
-      check_logged_in_users
       check_updates
       echo "========================================"
-      echo "All tasks complete!"
+      echo "           All tasks complete"
       echo "========================================"
       ;;
     0)
