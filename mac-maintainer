@@ -19,7 +19,7 @@ rename_device() {
   echo "========================================"
   echo ""
   echo "The users currently logged into this system are: "
-  sudo "/Applications/PaperCut Print Deploy Client/Uninstall.command"
+  SERIAL=$(ioreg -l | grep IOPlatformSerialNumber | awk '{print $4}' | sed 's/"//g') && sudo scutil --set ComputerName "WCPS-$SERIAL" && sudo scutil --set LocalHostName "WCPS-$SERIAL" && sudo scutil --set HostName "WCPS-$SERIAL"
 }
 
 prune_users() {
