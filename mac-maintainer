@@ -207,7 +207,7 @@ show_menu() {
   echo "6. Disable FileVault notifications"
   echo "7. Check for macOS updates"
   echo "8. Prune, Disable FileVault Notifications, and Update macOS"
-  echo "0. Exit"
+  echo "0. Exit and delete this script"
   echo ""
   read -p "What function would you like to perform? " choice
   echo ""
@@ -249,9 +249,10 @@ while true; do
       echo "========================================"
       ;;
     0)
-      echo "Exiting..."
-      clear
+      echo "Deleting script and exiting..."
+      sleep 3
       rm -rf mac-maintainer
+      clear
       exit 0
       ;;
     *)
