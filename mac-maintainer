@@ -210,7 +210,7 @@ show_menu() {
   clear
   echo ""
   echo "========================================"
-  echo "        macOS Maintenance Script"
+  echo "        macOS Maintainer Toolbox"
   echo "========================================"
   echo ""
   echo "1. Uninstall Papercut"
