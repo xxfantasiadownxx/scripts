@@ -195,6 +195,9 @@ check_updates() {
     
     if [[ "$update_confirm" == "yes" ]]; then
       echo ""
+      echo "You are currently logged in as: "
+      whoami
+      echo ""
       echo "Installing update: $UPDATE_LABEL"
       echo "The system will restart after installation..."
       sudo softwareupdate -i "$UPDATE_LABEL" --restart
